@@ -170,11 +170,13 @@ def main():
         print(duplications.to_string(index=False, header=False), file=sys.stderr)
         raise SystemExit("Please verify your curation.")
 
-    # Joined scaffolds contribute more than one Painted row for the same
-    # object/tag. Only the object name and tag matter for pairing, so
-    # collapse to one row per object to keep the Hap_1/Hap_2 alternation intact.
+    # A curated object (Scaffold_N) normally carries one Painted Hap_1 row and
+    # one Painted Hap_2 row: those two rows are the pair. A scaffold joined from
+    # two Painted components of the same haplotype contributes more than one row
+    # per (object, tag), so collapse on (object, tag) - not on object alone,
+    # which would delete one member of every pair.
     filtered_agp = filtered_agp[[0, 5, 8, 9, 10]]
-    filtered_agp = filtered_agp.drop_duplicates(subset=[0])
+    filtered_agp = filtered_agp.drop_duplicates(subset=[0, 10])
     filtered_agp = filtered_agp.reset_index(drop=True)
 
     dico_micro = pd.DataFrame(columns=["Hap_1", "Hap_2"])
