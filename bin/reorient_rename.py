@@ -7,6 +7,7 @@
 # ]
 # ///
 
+import csv
 import sys
 
 import click
@@ -14,23 +15,29 @@ from Bio import SeqIO
 
 
 def read_config(path):
-    """Parse a TSV of old_name, new_name, orientation (+ or -)."""
+    """Parse a CSV of old_name, new_name, orientation (+ or -)."""
     entries = []
     seen = set()
-    with open(path) as handle:
-        for lineno, line in enumerate(handle, 1):
-            line = line.split("#", 1)[0].strip()
-            if not line:
+    with open(path, newline="") as handle:
+        rows = csv.reader(handle)
+        for lineno, row in enumerate(rows, 1):
+            fields = [f.strip() for f in row]
+            if fields and fields[0].startswith("#"):
                 continue
-            fields = line.split()
+            while fields and fields[-1] == "":
+                fields.pop()
+            if not fields:
+                continue
             if len(fields) == 2:
                 old, new, orient = fields[0], fields[1], "+"
             elif len(fields) == 3:
                 old, new, orient = fields
             else:
                 raise click.ClickException(
-                    f"{path}:{lineno}: expected 2 or 3 fields, got {len(fields)}"
+                    f"{path}:{lineno}: expected 2 or 3 columns, got {len(fields)}"
                 )
+            if lineno == 1 and old.lower() in ("old", "old_name"):
+                continue
             if orient not in ("+", "-"):
                 raise click.ClickException(
                     f"{path}:{lineno}: orientation must be + or -, got {orient!r}"
@@ -57,7 +64,7 @@ def read_config(path):
     "--config",
     required=True,
     type=click.Path(exists=True),
-    help="TSV: old_name, new_name, orientation",
+    help="CSV: old_name,new_name,orientation",
 )
 @click.option("-o", "--output", required=True, type=click.Path(), help="Output FASTA")
 @click.option(
